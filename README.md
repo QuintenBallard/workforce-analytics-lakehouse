@@ -2,11 +2,11 @@
 
 This project builds a Workforce Analytics Lakehouse using Databricks Free Edition, Unity Catalog, Databricks-managed storage, Python, and Delta Lake.
 
-The current stage of the project focuses on the **Bronze layer**, where raw source data is ingested and stored without cleaning or transformation.
+The **Bronze and Silver layers are implemented**. Bronze preserves the raw source files, while Silver uses PySpark to clean, validate, standardize, deduplicate, and store the data as managed Delta tables.
 
 ## Project Goal
 
-The goal of this project is to collect workforce analytics data from public labor market sources and prepare it for later transformation into Silver and Gold Delta tables.
+The goal of this project is to collect workforce analytics data from public labor market sources and transform it into reliable, analytics-ready datasets for occupation, wage, employment, growth, education, skill, and technology analysis.
 
 The project uses:
 
@@ -32,7 +32,7 @@ Silver  → Cleaned, validated, structured tables
 Gold    → Analytics-ready dashboard tables
 ```
 
-At this stage, only the **Bronze layer** has been implemented.
+The **Bronze and Silver layers have been implemented**. The next stage is the Gold layer, where BLS and O*NET tables will be joined through standardized SOC occupation codes to support dashboards and workforce analytics.
 
 The Bronze layer stores:
 
@@ -84,6 +84,16 @@ workforce-analytics-lakehouse/
 │   └── bronze/
 │       ├── ingest_bls_api.py
 │       └── ingest_onet_text.py
+│
+├── data/
+│   ├── bronze/
+│   ├── silver/
+│   │   ├── __init__.py
+│   │   ├── utils.py
+│   │   ├── bls_tables.py
+│   │   ├── onet_tables.py
+│   │   └── data_insertion.py
+│   └── gold/
 │
 ├── sql/
 │   └── setup_unity_catalog.sql
@@ -386,27 +396,349 @@ The manifest records:
 
 ---
 
-# Dependencies
+# Silver Layer Implementation
 
-The Bronze ingestion scripts use only standard Python libraries.
-
-No PySpark is required for Bronze ingestion.
-
-Required Python libraries:
+The Silver layer transforms the raw Bronze files into clean, structured, and reusable Delta tables under:
 
 ```text
-os
-json
-time
-zipfile
-pathlib
-datetime
-urllib
+workforce_analytics.silver
 ```
 
-Because these are built into Python, no additional packages are required for the Bronze ingestion scripts.
+The Silver pipeline is implemented with PySpark and is organized into four main modules:
 
-A `requirements.txt` file is optional at this stage.
+| File | Responsibility |
+| --- | --- |
+| `data/silver/utils.py` | Shared file readers, cleaning functions, SOC normalization, safe type casting, validation, deduplication, issue creation, and Delta writers |
+| `data/silver/bls_tables.py` | Builds the BLS OEWS, Employment Projections, National Employment Matrix, and occupation crosswalk tables |
+| `data/silver/onet_tables.py` | Builds O*NET occupation, education, skill, knowledge, ability, task, activity, technology, and job-zone tables |
+| `data/silver/data_insertion.py` | Orchestrates the pipeline, writes managed Delta tables, and records processing audit information |
+
+## Silver Data Sources
+
+The Silver layer currently processes the following occupation-level sources:
+
+* BLS Occupational Employment and Wage Statistics (OEWS)
+* BLS Employment Projections
+* BLS National Employment Matrix
+* BLS O*NET-SOC and NEM crosswalk files
+* O*NET occupation and workforce requirement text files
+
+The BLS and O*NET datasets are standardized around SOC occupation codes so they can be joined later in the Gold layer.
+
+## Data Cleaning
+
+Reusable cleaning functions are applied consistently across BLS and O*NET datasets.
+
+### Column Standardization
+
+Source headers are converted to lowercase `snake_case`.
+
+Examples:
+
+```text
+O*NET-SOC Code   → onet_soc_code
+Data Value       → data_value
+Employment, 2024 → employment_2024
+```
+
+The pipeline also checks for column-name collisions after normalization so two different source fields cannot silently become the same Silver column.
+
+### String Cleaning
+
+All string columns are trimmed to remove leading and trailing whitespace. This prevents visually identical values from being treated as different records because of hidden spaces.
+
+### Missing-Value Standardization
+
+Source placeholders such as the following are converted to actual Spark null values:
+
+```text
+""
+-
+—
+N/A
+NA
+null
+```
+
+Missing values are not automatically replaced with zero because zero may be a valid workforce metric.
+
+### Safe Type Casting
+
+Source files are initially loaded as strings. Numeric fields are then converted to appropriate Spark types such as:
+
+```text
+int
+double
+boolean
+```
+
+The pipeline uses SQL `try_cast` rather than strict casting. Invalid values become null and are written to the centralized data-quality table instead of stopping the entire pipeline.
+
+Currency symbols, commas, and percentage symbols are removed before numeric conversion when appropriate.
+
+### BLS Wage Qualifiers
+
+BLS may publish top-coded wage values such as:
+
+```text
+>=$239200
+```
+
+The Silver pipeline preserves both the numeric value and its meaning:
+
+```text
+median_annual_wage_raw       = >=$239200
+median_annual_wage           = 239200.0
+median_annual_wage_qualifier = greater_than_or_equal
+```
+
+This prevents the wage ceiling from being discarded as malformed data.
+
+### Boolean Standardization
+
+O*NET yes/no fields are converted to Boolean values.
+
+Examples:
+
+```text
+Y, Yes, True, 1  → true
+N, No, False, 0  → false
+```
+
+## SOC Code Normalization
+
+SOC codes are the shared occupation key used to connect BLS and O*NET data.
+
+The Silver pipeline standardizes BLS and O*NET occupation codes into:
+
+```text
+soc_code      = ##-####
+onet_soc_code = ##-####.##
+```
+
+Examples:
+
+```text
+151252     → 15-1252
+15-1252.00 → 15-1252
+15-1252.01 → onet_soc_code 15-1252.01 and soc_code 15-1252
+```
+
+The detailed O*NET extension is preserved while the base SOC code is also created for cross-source joins.
+
+## Data Validation
+
+Validation is performed before records are written to the final Silver tables.
+
+The pipeline checks for:
+
+* Missing required source columns
+* Null values in required fields
+* Invalid SOC and O*NET-SOC formats
+* Invalid BLS period codes
+* Failed numeric and Boolean conversions
+* Exact duplicate business keys
+* Conflicting records that share the same business key
+
+Invalid required records are excluded from clean Silver tables after their issues have been captured.
+
+## Deduplication
+
+Each dataset defines a business key appropriate to its grain.
+
+Examples include:
+
+```text
+OEWS observation:
+series_id + year + period
+
+O*NET rating:
+onet_soc_code + element_id + scale_id
+
+Occupation lookup:
+occupation_code
+```
+
+The deduplication process:
+
+1. Creates a SHA-256 hash from the row values.
+2. Groups records by the dataset business key.
+3. Identifies exact duplicates and conflicting duplicates.
+4. Retains one deterministic record per business key.
+5. Writes duplicate details to the data-quality issue table.
+
+Exact duplicates are recorded as warnings. Conflicting duplicates are recorded as errors.
+
+## Data Concatenation
+
+The Silver pipeline uses schema-aware row concatenation where multiple DataFrames represent the same logical structure.
+
+All dataset-specific validation results are concatenated with:
+
+```python
+unionByName()
+```
+
+This creates one centralized data-quality issue dataset while preserving a consistent schema.
+
+The pipeline does not combine unrelated source tables into one oversized table. BLS and O*NET datasets remain source-aligned in Silver and will be joined through SOC codes in Gold.
+
+## Data Lineage and Audit Columns
+
+Every Silver record includes metadata that supports traceability:
+
+| Column | Description |
+| --- | --- |
+| `source_file_path` | Bronze file from which the record originated |
+| `run_id` | Unique identifier for the pipeline execution |
+| `processed_at` | Timestamp when the record was processed |
+
+The pipeline also maintains:
+
+```text
+workforce_analytics.silver.data_quality_issues
+workforce_analytics.silver.processing_audit
+```
+
+The audit table records table-level processing status, row counts, write mode, start time, completion time, and error details.
+
+## Managed Delta Tables
+
+The cleaned DataFrames are written as managed Unity Catalog Delta tables.
+
+### BLS Silver Tables
+
+```text
+bls_oews_observations
+bls_oews_series
+bls_oews_occupations
+bls_oews_areas
+bls_oews_industries
+bls_oews_datatypes
+bls_oews_footnotes
+bls_employment_projections
+bls_national_employment_matrix
+bls_onet_soc_crosswalk
+bls_nem_occupational_coverage
+```
+
+### O*NET Silver Tables
+
+```text
+onet_occupations
+onet_education_categories
+onet_education
+onet_training_experience
+onet_essential_skills
+onet_transferable_skills
+onet_software_skills
+onet_knowledge
+onet_abilities
+onet_task_statements
+onet_work_activities
+onet_job_zones
+onet_related_occupations
+```
+
+### Quality and Audit Tables
+
+```text
+data_quality_issues
+processing_audit
+```
+
+## Databricks Serverless Compatibility
+
+The Silver pipeline runs on Databricks Serverless compute.
+
+Because DataFrame `persist()`, `cache()`, and `unpersist()` operations are not supported in this environment, the pipeline writes DataFrames directly to Delta tables and reads completed tables for final row counts.
+
+Excel workbooks are opened with Pandas and `openpyxl`, then immediately converted to Spark DataFrames for distributed transformation and validation.
+
+## Running the Silver Pipeline
+
+Install the Excel dependency in the Databricks job environment:
+
+```text
+openpyxl
+```
+
+Run:
+
+```text
+data/silver/data_insertion.py
+```
+
+The pipeline performs the following steps:
+
+1. Creates the Silver schema if it does not exist.
+2. Reads BLS Bronze text and Excel files.
+3. Cleans, standardizes, validates, casts, and deduplicates BLS records.
+4. Writes the BLS managed Delta tables.
+5. Reads and transforms O*NET tab-delimited files.
+6. Writes the O*NET managed Delta tables.
+7. Concatenates all validation results.
+8. Writes the data-quality and processing-audit tables.
+
+## Verifying the Silver Layer
+
+List the created tables:
+
+```sql
+SHOW TABLES IN workforce_analytics.silver;
+```
+
+Query a fully qualified table:
+
+```sql
+SELECT *
+FROM workforce_analytics.silver.onet_education;
+```
+
+Review pipeline results:
+
+```sql
+SELECT *
+FROM workforce_analytics.silver.processing_audit
+ORDER BY completed_at DESC;
+```
+
+Review validation issues:
+
+```sql
+SELECT *
+FROM workforce_analytics.silver.data_quality_issues
+ORDER BY detected_at DESC;
+```
+
+
+---
+
+# Dependencies
+
+## Bronze Dependencies
+
+The Bronze ingestion scripts use standard Python libraries for HTTP requests, JSON processing, ZIP extraction, file operations, and timestamps.
+
+## Silver Dependencies
+
+The Silver transformation pipeline uses:
+
+```text
+pyspark
+pandas
+openpyxl
+```
+
+`openpyxl` is required to read the BLS Excel workbooks. In Databricks Serverless jobs, it should be added to the task environment or included in `requirements.txt`.
+
+Example:
+
+```text
+openpyxl
+```
+
+PySpark is provided by Databricks and is used for cleaning, validation, deduplication, schema enforcement, and Delta table writes.
 
 ---
 
@@ -515,7 +847,7 @@ The Bronze layer only downloads and stores raw files.
 
 PySpark is not needed at this stage because no distributed transformations are performed.
 
-PySpark will be introduced in the Silver layer to:
+PySpark is used in the Silver layer to:
 
 * Read raw JSON and text files
 * Flatten nested BLS JSON
@@ -536,27 +868,27 @@ Some BLS API responses may include warning messages about missing catalog metada
 
 If the response contains data and the status is `REQUEST_SUCCEEDED`, the raw response is still saved in Bronze.
 
-Detailed validation of these responses will be handled in the Silver layer.
+Detailed validation of these responses is handled in the Silver layer.
 
 ---
 
-# Next Stage: Silver Layer
+# Next Stage: Gold Layer
 
-The next stage will create Silver processing scripts that:
+The next stage will create analytics-ready Gold tables that join BLS and O*NET data through standardized SOC occupation codes.
 
-* Read raw Bronze files
-* Validate required fields
-* Check response status
-* Parse BLS JSON into structured rows
-* Read O*NET tab-delimited text files
-* Standardize column names
-* Cast data types
-* Build cleaned Delta tables
-* Create validation error tables
-* Prepare data for Gold analytics
+Planned Gold outputs include:
 
-Silver tables will be stored under:
+* Occupation wage and employment profiles
+* Fastest-growing and declining occupations
+* Highest-paying occupations by education level
+* Occupation skills and technology profiles
+* Education and training requirements by occupation
+* Annual openings and projected-growth analysis
+* Workforce shortage indicators
+* Power BI or Tableau dashboard tables
+
+Gold tables will be stored under:
 
 ```text
-workforce_analytics.silver
+workforce_analytics.gold
 ```
