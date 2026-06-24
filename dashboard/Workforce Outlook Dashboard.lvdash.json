@@ -1,0 +1,876 @@
+{
+  "datasets": [
+    {
+      "name": "workforce_outlook",
+      "displayName": "Workforce Outlook",
+      "config": {
+        "source": "workforce_analytics.gold.fact_occupation_projection",
+        "measures": [
+          {
+            "displayName": "Total Base-Year Employment",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 0.0
+              },
+              "abbreviation": "compact"
+            },
+            "name": "total_base_employment",
+            "expr": "SUM(employment_base_year)",
+            "comment": "Total employment in base year"
+          },
+          {
+            "displayName": "Total Projected Employment",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 0.0
+              },
+              "abbreviation": "compact"
+            },
+            "name": "total_projected_employment",
+            "expr": "SUM(employment_projected_year)",
+            "comment": "Total projected employment"
+          },
+          {
+            "displayName": "Total Annual Openings",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 0.0
+              },
+              "abbreviation": "compact"
+            },
+            "name": "total_annual_openings",
+            "expr": "SUM(annual_openings)",
+            "comment": "Total annual job openings"
+          },
+          {
+            "displayName": "Average Median Annual Wage Across Occupations",
+            "format": {
+              "type": "currency",
+              "currencyCode": "USD",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 0.0
+              }
+            },
+            "name": "avg_median_wage",
+            "expr": "AVG(median_annual_wage)",
+            "comment": "Average of median annual wages across occupations"
+          }
+        ],
+        "filter": "occupation_type = 'Line item'",
+        "version": "1.1",
+        "comment": "Workforce occupation projections - detailed occupations only",
+        "dimensions": [
+          {
+            "name": "occupation_title",
+            "expr": "occupation_title",
+            "displayName": "Occupation",
+            "comment": "Occupation title"
+          },
+          {
+            "name": "occupation_type",
+            "expr": "occupation_type",
+            "displayName": "Occupation Type",
+            "comment": "Type of occupation"
+          },
+          {
+            "name": "typical_entry_education",
+            "expr": "typical_entry_education",
+            "displayName": "Typical Entry Education",
+            "comment": "Education level typically required for entry"
+          },
+          {
+            "name": "growth_direction",
+            "expr": "growth_direction",
+            "displayName": "Growth Direction",
+            "comment": "Direction of employment growth (Growing/Declining)"
+          },
+          {
+            "name": "on_the_job_training",
+            "expr": "on_the_job_training",
+            "displayName": "On-the-Job Training",
+            "comment": "Required on-the-job training"
+          },
+          {
+            "displayName": "Employment Growth Rate",
+            "format": {
+              "type": "percentage",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 1.0
+              }
+            },
+            "name": "employment_change_percent",
+            "expr": "employment_change_percent",
+            "comment": "Percentage change in employment"
+          },
+          {
+            "displayName": "Median Annual Wage",
+            "format": {
+              "type": "currency",
+              "currencyCode": "USD",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 0.0
+              }
+            },
+            "name": "median_annual_wage",
+            "expr": "median_annual_wage",
+            "comment": "Median annual wage for occupation"
+          },
+          {
+            "name": "annual_openings",
+            "expr": "annual_openings",
+            "displayName": "Annual Openings",
+            "comment": "Annual job openings for this occupation"
+          }
+        ]
+      }
+    }
+  ],
+  "pages": [
+    {
+      "name": "df45425b",
+      "displayName": "Untitled page",
+      "layout": [
+        {
+          "widget": {
+            "name": "counter_base_employment",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "workforce_outlook",
+                  "fields": [
+                    {
+                      "name": "measure(total_base_employment)",
+                      "expression": "MEASURE(`total_base_employment`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Total Base-Year Employment",
+                "showTitle": true
+              },
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(total_base_employment)"
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "counter_projected_employment",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "workforce_outlook",
+                  "fields": [
+                    {
+                      "name": "measure(total_projected_employment)",
+                      "expression": "MEASURE(`total_projected_employment`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Total Projected Employment",
+                "showTitle": true
+              },
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(total_projected_employment)"
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 0,
+            "width": 3,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "counter_annual_openings",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "workforce_outlook",
+                  "fields": [
+                    {
+                      "name": "measure(total_annual_openings)",
+                      "expression": "MEASURE(`total_annual_openings`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Total Annual Openings",
+                "showTitle": true
+              },
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(total_annual_openings)"
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 0,
+            "width": 3,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "counter_avg_wage",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "workforce_outlook",
+                  "fields": [
+                    {
+                      "name": "measure(avg_median_wage)",
+                      "expression": "MEASURE(`avg_median_wage`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Average Median Annual Wage Across Occupations",
+                "showTitle": true
+              },
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(avg_median_wage)"
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 9,
+            "y": 0,
+            "width": 3,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "bar_fastest_growing",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "workforce_outlook",
+                  "fields": [
+                    {
+                      "name": "employment_change_percent",
+                      "expression": "`employment_change_percent`"
+                    },
+                    {
+                      "name": "occupation_title",
+                      "expression": "`occupation_title`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "15 Fastest-Growing Occupations",
+                "showTitle": true
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "employment_change_percent",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "occupation_title",
+                  "scale": {
+                    "type": "categorical",
+                    "categorySize": {
+                      "type": "number-of-categories",
+                      "number": 15
+                    },
+                    "sort": {
+                      "by": "x-reversed"
+                    }
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 12,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "bar_most_openings",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "workforce_outlook",
+                  "fields": [
+                    {
+                      "name": "measure(total_annual_openings)",
+                      "expression": "MEASURE(`total_annual_openings`)"
+                    },
+                    {
+                      "name": "occupation_title",
+                      "expression": "`occupation_title`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "15 Occupations with Most Annual Openings",
+                "showTitle": true
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "measure(total_annual_openings)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "occupation_title",
+                  "scale": {
+                    "type": "categorical",
+                    "categorySize": {
+                      "type": "number-of-categories",
+                      "number": 15
+                    },
+                    "sort": {
+                      "by": "x-reversed"
+                    }
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 9,
+            "width": 12,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "bar_highest_paying",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "workforce_outlook",
+                  "fields": [
+                    {
+                      "name": "median_annual_wage",
+                      "expression": "`median_annual_wage`"
+                    },
+                    {
+                      "name": "occupation_title",
+                      "expression": "`occupation_title`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "15 Highest-Paying Occupations",
+                "showTitle": true
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "median_annual_wage",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "occupation_title",
+                  "scale": {
+                    "type": "categorical",
+                    "categorySize": {
+                      "type": "number-of-categories",
+                      "number": 15
+                    },
+                    "sort": {
+                      "by": "x-reversed"
+                    }
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 14,
+            "width": 12,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "scatter_wage_growth",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "workforce_outlook",
+                  "fields": [
+                    {
+                      "name": "median_annual_wage",
+                      "expression": "`median_annual_wage`"
+                    },
+                    {
+                      "name": "employment_change_percent",
+                      "expression": "`employment_change_percent`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "Employment Growth vs. Median Annual Wage",
+                "showTitle": true
+              },
+              "widgetType": "scatter",
+              "encodings": {
+                "x": {
+                  "fieldName": "median_annual_wage",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "employment_change_percent",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 19,
+            "width": 12,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "table_occupations",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "workforce_outlook",
+                  "fields": [
+                    {
+                      "name": "occupation_title",
+                      "expression": "`occupation_title`"
+                    },
+                    {
+                      "name": "typical_entry_education",
+                      "expression": "`typical_entry_education`"
+                    },
+                    {
+                      "name": "median_annual_wage",
+                      "expression": "`median_annual_wage`"
+                    },
+                    {
+                      "name": "employment_change_percent",
+                      "expression": "`employment_change_percent`"
+                    },
+                    {
+                      "name": "annual_openings",
+                      "expression": "`annual_openings`"
+                    },
+                    {
+                      "name": "on_the_job_training",
+                      "expression": "`on_the_job_training`"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`typical_entry_education` IS NOT NULL"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Occupation Details",
+                "showTitle": true
+              },
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "occupation_title"
+                  },
+                  {
+                    "fieldName": "typical_entry_education"
+                  },
+                  {
+                    "fieldName": "median_annual_wage"
+                  },
+                  {
+                    "fieldName": "employment_change_percent"
+                  },
+                  {
+                    "fieldName": "annual_openings"
+                  },
+                  {
+                    "fieldName": "on_the_job_training"
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 24,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "filter_occupation_title",
+            "queries": [
+              {
+                "name": "dashboards/01f16fe9d47616b39d03fc94e4333fcb/datasets/01f16feab8981677b6f5648cdab743e0_occupation_title",
+                "query": {
+                  "datasetName": "workforce_outlook",
+                  "fields": [
+                    {
+                      "name": "occupation_title",
+                      "expression": "`occupation_title`"
+                    },
+                    {
+                      "name": "occupation_title_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Occupation Title",
+                "showTitle": true
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "occupation_title",
+                    "queryName": "dashboards/01f16fe9d47616b39d03fc94e4333fcb/datasets/01f16feab8981677b6f5648cdab743e0_occupation_title"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 30,
+            "width": 3,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "filter_occupation_type",
+            "queries": [
+              {
+                "name": "dashboards/01f16fe9d47616b39d03fc94e4333fcb/datasets/01f16feab8981677b6f5648cdab743e0_occupation_type",
+                "query": {
+                  "datasetName": "workforce_outlook",
+                  "fields": [
+                    {
+                      "name": "occupation_type",
+                      "expression": "`occupation_type`"
+                    },
+                    {
+                      "name": "occupation_type_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Occupation Type",
+                "showTitle": true
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "occupation_type",
+                    "queryName": "dashboards/01f16fe9d47616b39d03fc94e4333fcb/datasets/01f16feab8981677b6f5648cdab743e0_occupation_type"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 30,
+            "width": 2,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "filter_education",
+            "queries": [
+              {
+                "name": "dashboards/01f16fe9d47616b39d03fc94e4333fcb/datasets/01f16feab8981677b6f5648cdab743e0_typical_entry_education",
+                "query": {
+                  "datasetName": "workforce_outlook",
+                  "fields": [
+                    {
+                      "name": "typical_entry_education",
+                      "expression": "`typical_entry_education`"
+                    },
+                    {
+                      "name": "typical_entry_education_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Typical Entry Education",
+                "showTitle": true
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "typical_entry_education",
+                    "queryName": "dashboards/01f16fe9d47616b39d03fc94e4333fcb/datasets/01f16feab8981677b6f5648cdab743e0_typical_entry_education"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 5,
+            "y": 30,
+            "width": 3,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "filter_growth_direction",
+            "queries": [
+              {
+                "name": "dashboards/01f16fe9d47616b39d03fc94e4333fcb/datasets/01f16feab8981677b6f5648cdab743e0_growth_direction",
+                "query": {
+                  "datasetName": "workforce_outlook",
+                  "fields": [
+                    {
+                      "name": "growth_direction",
+                      "expression": "`growth_direction`"
+                    },
+                    {
+                      "name": "growth_direction_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Growth Direction",
+                "showTitle": true
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "growth_direction",
+                    "queryName": "dashboards/01f16fe9d47616b39d03fc94e4333fcb/datasets/01f16feab8981677b6f5648cdab743e0_growth_direction"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 8,
+            "y": 30,
+            "width": 2,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "filter_training",
+            "queries": [
+              {
+                "name": "dashboards/01f16fe9d47616b39d03fc94e4333fcb/datasets/01f16feab8981677b6f5648cdab743e0_on_the_job_training",
+                "query": {
+                  "datasetName": "workforce_outlook",
+                  "fields": [
+                    {
+                      "name": "on_the_job_training",
+                      "expression": "`on_the_job_training`"
+                    },
+                    {
+                      "name": "on_the_job_training_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "On-the-Job Training",
+                "showTitle": true
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "on_the_job_training",
+                    "queryName": "dashboards/01f16fe9d47616b39d03fc94e4333fcb/datasets/01f16feab8981677b6f5648cdab743e0_on_the_job_training"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 10,
+            "y": 30,
+            "width": 2,
+            "height": 4
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+    },
+    "applyModeEnabled": false
+  }
+}
